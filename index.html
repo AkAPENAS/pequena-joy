@@ -605,6 +605,89 @@
       .letter-crest .crest-line { width: 28px; }
       .corner-ornament { width: 16px; height: 16px; }
     }
+
+    /* =============================================
+       MUSIC PLAYER — invisivel, roda em background
+       ============================================= */
+
+    #yt-player-wrapper {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      top: -9999px;
+      left: -9999px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Botão discreto no canto para pausar */
+    .music-toggle {
+      position: fixed;
+      bottom: 14px;
+      right: 58px;
+      z-index: 200;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(12, 10, 8, 0.5);
+      border: 1px solid rgba(180, 155, 110, 0.12);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(180, 155, 110, 0.35);
+      font-size: 14px;
+      transition: opacity 0.8s ease, border-color 0.4s;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .music-toggle.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .music-toggle:hover {
+      border-color: rgba(180, 155, 110, 0.3);
+    }
+
+    /* Overlay inicial para permitir autoplay */
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(6, 4, 3, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      cursor: pointer;
+      transition: opacity 1.2s ease;
+    }
+
+    .intro-overlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .intro-overlay p {
+      font-family: 'EB Garamond', serif;
+      font-size: 0.75rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(200, 170, 150, 0.35);
+      animation: introPulse 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes introPulse {
+      0%   { opacity: 0.3; }
+      100% { opacity: 0.6; }
+    }
+
+    @media (max-width: 600px) {
+      .music-toggle { bottom: 10px; right: 48px; width: 28px; height: 28px; }
+    }
   </style>
 </head>
 <body>
@@ -654,6 +737,14 @@
   <div id="ornaments-container" style="position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;"></div>
 
   <div class="bg-gradient"></div>
+
+  <!-- YouTube player (invisivel) -->
+  <div id="yt-player-wrapper"></div>
+
+  <!-- Overlay inicial — pede interacao para permitir audio -->
+  <div class="intro-overlay" id="introOverlay">
+    <p>toque para entrar</p>
+  </div>
 
   <div class="particle p-1"></div>
   <div class="particle p-2"></div>
@@ -805,6 +896,49 @@
       if (window.scrollY > 100) hint.classList.add('hidden');
       else hint.classList.remove('hidden');
     }, { passive: true });
+
+    // =============================================
+    // MUSICA — audio HTML5 tag (arquivo local)
+    // Espera que "musica.mp3" esteja na mesma pasta
+    // =============================================
+    const overlay = document.getElementById('introOverlay');
+
+    // Cria elemento de audio
+    const audio = new Audio('musica.mp3');
+    audio.preload = 'auto';
+    audio.loop = true;
+    audio.volume = 0.5;
+
+    // Ao clicar no overlay: inicia musica e fecha
+    overlay.addEventListener('click', function() {
+      overlay.classList.add('fade-out');
+      audio.currentTime = 102;
+      audio.play().catch(function(err) {
+        console.log('Audio play failed:', err);
+      });
+      setTimeout(function() {
+        overlay.style.display = 'none';
+      }, 1500);
+    });
+
+    // Botão de mute no canto
+    var musicBtnDiv = document.createElement('div');
+    musicBtnDiv.className = 'music-toggle';
+    musicBtnDiv.innerHTML = '&#9835;';
+    musicBtnDiv.style.cssText = 'cursor:pointer;';
+    document.body.appendChild(musicBtnDiv);
+
+    setTimeout(function() {
+      musicBtnDiv.classList.add('visible');
+    }, 5000);
+
+    var isMuted = false;
+    musicBtnDiv.addEventListener('click', function(e) {
+      e.stopPropagation();
+      isMuted = !isMuted;
+      audio.muted = isMuted;
+      musicBtnDiv.innerHTML = isMuted ? '&#128263;' : '&#9835;';
+    });
 
     // =============================================
     // GERAR ORNAMENTOS ALEATORIOS POR TODA A CARTA
